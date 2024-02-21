@@ -1,0 +1,97 @@
+# This is a basic workflow that is triggered on pull request at develop branch
+name: Deploy Dev
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  push:
+  pull_request:
+    branches:
+      - develop
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job
+  dev-deploy-oke:
+    if: github.event.pull_request.merged == true
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    env:
+      OCI_CLI_USER: ${{ secrets.OCI_CLI_USER }}
+      OCI_CLI_TENANCY: ${{ secrets.OCI_CLI_TENANCY }}
+      OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
+      OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
+      OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # ---------------------------------------------------
+    #Preparamos el entorno
+    - name: Configurando Java JDK 17
+      uses: actions/setup-java@v4.0.0
+      with:
+        # The Java version to set up. Takes a whole or semver Java version. See examples of supported syntax in README file
+        java-version: 17
+        distribution: corretto
+    # ---------------------------------------------------
+    - name: Configurando Docker QEMU
+      uses: docker/setup-qemu-action@v3
+    # ---------------------------------------------------
+    - name: Configurando Docker BuildX
+      uses: docker/setup-buildx-action@v3
+    # ---------------------------------------------------
+    # Clonamos el repositorio
+    - name: Clonar repo
+      uses: actions/checkout@v4.1.1
+      with:
+        ref: main
+    # ---------------------------------------------------
+    # Compilamos y empaquetamos
+    - name: Compilar y empaquetar
+      run: cd ./initial && mvn clean package -DskipTests=true
+    # ---------------------------------------------------
+    # Generamos la imagen Docker
+    #- name: Login to Docker Hub
+    #  uses: docker/login-action@v3
+    #  with:
+    #    username: ${{ secrets.DOCKERHUB_USERNAME }}
+    #    password: ${{ secrets.DOCKERHUB_TOKEN }}
+    # ---------------------------------------------------
+    - name: Crear imagen Docker y publicar
+      uses: docker/build-push-action@v5
+      with:
+        context: ./initial
+        push: false
+        load: true
+        tags: netelparaguay/app-test:latest
+        # ---------------------------------------------------
+    - name: Log into OCIR
+      uses: oracle-actions/login-ocir@v1.2.1
+      id: login-ocir
+      with:
+        auth_token: ${{ secrets.OCI_AUTH_TOKEN }}
+    # ---------------------------------------------------
+    - name: Get or create an OCIR Repository
+      uses: oracle-actions/get-ocir-repository@v1.2.1
+      id: get-ocir-repository
+      with:
+        name: oci-cloud-native-mushop/app-test
+        compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
+    # ---------------------------------------------------
+    - name: Tag and push a container image
+      id: tag-and-push-image
+      run: |
+        docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
+        docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
+    # ---------------------------------------------------
+    - name: Configure Kubectl
+      uses: oracle-actions/configure-kubectl-oke@v1.3.2
+      id: test-configure-kubectl-oke-action
+      with:
+        cluster: ${{ secrets.OKE_CLUSTER_OCID }}
+    # ---------------------------------------------------
+    - name: Desplegar imagen
+      run: |
+        kubectl delete deployment app-test-deployment --ignore-not-found
+        kubectl apply -f ./initial/deployment.yaml
+        
