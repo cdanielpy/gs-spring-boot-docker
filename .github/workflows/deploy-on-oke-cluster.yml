@@ -48,6 +48,13 @@ jobs:
       with:
         auth_token: ${{ secrets.OCI_AUTH_TOKEN }}
     # ---------------------------------------------------
+    - name: Get or create an OCIR Repository
+      uses: oracle-actions/get-ocir-repository@v1.2.1
+      id: get-ocir-repository
+      with:
+        name: oci-cloud-native-mushop/app-test
+        compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
+    # ---------------------------------------------------
     - name: Configurando Docker QEMU
       uses: docker/setup-qemu-action@v3
     # ---------------------------------------------------
@@ -76,18 +83,12 @@ jobs:
       with:
         context: ./initial
         push: true
-        tags: netelparaguay/app-test:latest
-    # ---------------------------------------------------
-    - name: Get or create an OCIR Repository
-      uses: oracle-actions/get-ocir-repository@v1.2.1
-      id: get-ocir-repository
-      with:
-        name: oci-cloud-native-mushop/app-test
-        compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
+        tags: |
+          netelparaguay/app-test:latest
+          "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
     # ---------------------------------------------------
     - name: Tag and push a container image
       id: tag-and-push-image
       run: |
-        docker tag "netelparaguay/app-test:latest" "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
         docker push "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
       
