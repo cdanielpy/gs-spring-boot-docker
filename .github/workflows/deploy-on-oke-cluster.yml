@@ -89,12 +89,11 @@ jobs:
     - name: Tag and push a container image
       id: tag-and-push-image
       run: |
-        echo ${{secrets.OCI_AUTH_TOKEN}} | sed 's/ //g'
-        export USR = ${{ secrets.OCI_CLI_USER }} | sed 's/ //g'
-        export TKN = ${{ secrets.OCI_AUTH_TOKEN }} | sed 's/ //g'
-        export TNN = ${{ secrets.OCI_CLI_TENANCY }} | sed 's/ //g'
-        export REG = ${{ secrets.OCI_CLI_REGION }} | sed 's/ //g'
-        echo docker login $REG -u $TNN/$USR -p $TKN
+        echo "docker login $OCI_CLI_REGION"  > docker-cmd.out
+        echo " -u $OCI_CLI_TENANCY" >> docker-cmd.out
+        echo "/$OCI_CLI_USER" >> docker-cmd.out
+        echo "-p $OCI_AUTH_TOKEN" >> docker-cmd.out
+        cat docker-cmd.out |base64
         docker pull gru.ocir.io/idmqppdudku0/gru-mushop-repo/webquerydb:v2
         docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
         docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
