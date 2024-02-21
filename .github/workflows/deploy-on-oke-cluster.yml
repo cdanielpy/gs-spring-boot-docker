@@ -75,7 +75,7 @@ jobs:
       uses: oracle-actions/get-ocir-repository@v1.2.1
       id: get-ocir-repository
       with:
-        name: oraclelinux
+        name: oci-cloud-native-mushop/app-test
         compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
 
     - name: Log into OCIR
@@ -87,7 +87,6 @@ jobs:
     - name: Tag and push a container image
       id: tag-and-push-image
       run: |
-        docker pull oraclelinux:8-slim
         docker tag netelparaguay/app-test:latest "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
         docker push "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
       
