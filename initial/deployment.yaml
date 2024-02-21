@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-test-deployment
+spec:
+  selector:
+    matchLabels:
+      app: app-test
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: app-test
+    spec:
+      containers:
+      - name: app-test
+        image: gru.ocir.io/idmqppdudku0/oci-cloud-native-mushop/app-test:latest
+        ports:
+        - containerPort: 8080
+      imagePullSecrets:
+      - name: ocirsecret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-test-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: app-test
