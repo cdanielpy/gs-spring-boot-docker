@@ -101,5 +101,5 @@ jobs:
     - name: Desplegar imagen
       run: |
         kubectl delete deployment app-test-deployment --ignore-not-found
-        kubectl apply -f deployment.yaml
+        kubectl apply -f ./initial/deployment.yaml
         
