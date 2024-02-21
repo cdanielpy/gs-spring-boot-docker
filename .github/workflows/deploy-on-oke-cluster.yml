@@ -30,7 +30,6 @@ jobs:
       OCI_CLI_FINGERPRINT: ${{ secrets.OCI_CLI_FINGERPRINT }}
       OCI_CLI_KEY_CONTENT: ${{ secrets.OCI_CLI_KEY_CONTENT }}
       OCI_CLI_REGION: ${{ secrets.OCI_CLI_REGION }}
-      OCI_AUTH_TOKEN: ${{ secrets.OCI_AUTH_TOKEN }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -90,12 +89,17 @@ jobs:
     - name: Tag and push a container image
       id: tag-and-push-image
       run: |
-        echo "docker login $OCI_CLI_REGION"  > docker-cmd.out
-        echo " -u $OCI_CLI_TENANCY" >> docker-cmd.out
-        echo "/$OCI_CLI_USER" >> docker-cmd.out
-        echo "-p $OCI_AUTH_TOKEN" >> docker-cmd.out
-        cat docker-cmd.out |base64
-        docker pull gru.ocir.io/idmqppdudku0/gru-mushop-repo/webquerydb:v2
         docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
         docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
+    # 
+    - name: Configure Kubectl
+      uses: oracle-actions/configure-kubectl-oke@v1.3.2
+      id: test-configure-kubectl-oke-action
+      with:
+        cluster: ${{ secrets.OKE_CLUSTER_OCID }}
+    - name: Desplegar imagen
+      run: |
+        kubectl get nodes -A
+        # kubectl delete deployment app-test --ignore-not-found
+        # kubectl apply -f deployment.yaml
       
