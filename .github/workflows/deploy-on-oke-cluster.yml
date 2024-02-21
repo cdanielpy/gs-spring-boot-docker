@@ -99,7 +99,6 @@ jobs:
         cluster: ${{ secrets.OKE_CLUSTER_OCID }}
     - name: Desplegar imagen
       run: |
-        kubectl get nodes -A
-        # kubectl delete deployment app-test --ignore-not-found
-        # kubectl apply -f deployment.yaml
+        kubectl delete deployment app-test-deployment --ignore-not-found
+        kubectl apply -f deployment.yaml
       
