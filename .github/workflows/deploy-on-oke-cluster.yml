@@ -48,7 +48,7 @@ jobs:
         
     # Compilamos y empaquetamos
     - name: Compilar y empaquetar
-    - run: cd ./initial && mvn clean package -DskipTests=true
+      run: cd ./initial && mvn clean package -DskipTests=true
 
     # Generamos la imagen Docker
     - name: Login to Docker Hub
@@ -60,7 +60,7 @@ jobs:
     - name: Crear imagen Docker y publicar
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: ./initial
         push: true
         tags: netelparaguay/app-test:latest
     
