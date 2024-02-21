@@ -91,15 +91,15 @@ jobs:
       run: |
         docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
         docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
-    # 
+    # ---------------------------------------------------
     - name: Configure Kubectl
       uses: oracle-actions/configure-kubectl-oke@v1.3.2
       id: test-configure-kubectl-oke-action
       with:
         cluster: ${{ secrets.OKE_CLUSTER_OCID }}
+    # ---------------------------------------------------
     - name: Desplegar imagen
       run: |
-        kubectl get nodes -A
-        # kubectl delete deployment app-test --ignore-not-found
-        # kubectl apply -f deployment.yaml
-      
+        kubectl delete deployment app-test-deployment --ignore-not-found
+        kubectl apply -f deployment.yaml
+        
