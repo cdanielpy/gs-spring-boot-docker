@@ -82,7 +82,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./initial
-        push: true
+        push: false
         tags: |
           netelparaguay/app-test:latest
           "${{ steps.get-ocir-repository.outputs.repo_path }}:latest"
