@@ -89,6 +89,7 @@ jobs:
     - name: Tag and push a container image
       id: tag-and-push-image
       run: |
+        docker pull gru.ocir.io/idmqppdudku0/gru-mushop-repo/webquerydb:v2
         docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
         docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
       
