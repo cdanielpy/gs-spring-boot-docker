@@ -34,7 +34,8 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
     # ---------------------------------------------------
-    #Preparamos el entorno
+    # Preparamos el entorno
+    # ---------------------------------------------------
     - name: Configurando Java JDK 17
       uses: actions/setup-java@v4.0.0
       with:
@@ -47,58 +48,83 @@ jobs:
     # ---------------------------------------------------
     - name: Configurando Docker BuildX
       uses: docker/setup-buildx-action@v3
+
     # ---------------------------------------------------
     # Clonamos el repositorio
+    # ---------------------------------------------------
     - name: Clonar repo
       uses: actions/checkout@v4.1.1
       with:
         ref: main
+    
     # ---------------------------------------------------
     # Compilamos y empaquetamos
+    # ---------------------------------------------------
     - name: Compilar y empaquetar
       run: cd ./initial && mvn clean package -DskipTests=true
+    
     # ---------------------------------------------------
-    # Generamos la imagen Docker
+    # Generamos la imagen para subir a Docker hub
+    # ---------------------------------------------------
     #- name: Login to Docker Hub
     #  uses: docker/login-action@v3
     #  with:
     #    username: ${{ secrets.DOCKERHUB_USERNAME }}
     #    password: ${{ secrets.DOCKERHUB_TOKEN }}
+
     # ---------------------------------------------------
-    - name: Crear imagen Docker y publicar
+    # Creamos la imagen Docker
+    # ---------------------------------------------------
+    - name: Crear imagen Docker
       uses: docker/build-push-action@v5
       with:
         context: ./initial
         push: false
         load: true
         tags: netelparaguay/app-test:latest
-        # ---------------------------------------------------
+    
+    # ---------------------------------------------------
+    # Iniciamos sesion en OCI
+    # ---------------------------------------------------
     - name: Log into OCIR
       uses: oracle-actions/login-ocir@v1.2.1
       id: login-ocir
       with:
         auth_token: ${{ secrets.OCI_AUTH_TOKEN }}
+    
     # ---------------------------------------------------
-    - name: Get or create an OCIR Repository
+    # Crear y obtener datos de Repositorio de destino
+    # ---------------------------------------------------
+    - name: Crear/Obtener datos de Repositorio remoto
       uses: oracle-actions/get-ocir-repository@v1.2.1
       id: get-ocir-repository
       with:
         name: oci-cloud-native-mushop/app-test
         compartment: ${{ secrets.OCI_COMPARTMENT_OCID }}
+
     # ---------------------------------------------------
-    - name: Tag and push a container image
+    # Etiquetamos y publicamos la imagen en el Repo OCI
+    # ---------------------------------------------------
+    - name: Etiquetar y publicar imagen
       id: tag-and-push-image
       run: |
         docker tag netelparaguay/app-test:latest ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
         docker push ${{ steps.get-ocir-repository.outputs.repo_path }}:latest
-    # 
-    - name: Configure Kubectl
+    
+    # ---------------------------------------------------
+    # Instalamos y configuramos Kubectl
+    # ---------------------------------------------------
+    - name: Instalar y configurar Kubectl
       uses: oracle-actions/configure-kubectl-oke@v1.3.2
       id: test-configure-kubectl-oke-action
       with:
         cluster: ${{ secrets.OKE_CLUSTER_OCID }}
+    
+    # ---------------------------------------------------
+    # Desplegamos nuestra imagen más nueva
+    # ---------------------------------------------------
     - name: Desplegar imagen
       run: |
         kubectl delete deployment app-test-deployment --ignore-not-found
-        kubectl apply -f deployment.yaml
-      
+        kubectl apply -f ./initial/deployment.yaml
+        
